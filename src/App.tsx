@@ -1,9 +1,12 @@
-import DragContainer from "./widgets/dragContainer";
+import DragContainer from "./widgets/drag/dragContainer";
+import ModelRender from "./widgets/modelRenderer/renderer";
 
 function App() {
   return (
     <>
-      <DragContainer />
+      <DragContainer>
+        <ModelRender />
+      </DragContainer>
     </>
   );
 }

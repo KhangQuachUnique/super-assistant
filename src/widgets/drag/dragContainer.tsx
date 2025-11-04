@@ -1,8 +1,12 @@
-import { useEffect, useRef } from "react";
-import "../styles/DragContainer.css";
+import { ReactNode, useEffect, useRef } from "react";
+import "../../styles/DragContainer.css";
 import { initDrag } from "./DragLogic";
 
-const DragContainer = () => {
+interface DragContainerProps {
+  children?: ReactNode;
+}
+
+const DragContainer = ({ children }: DragContainerProps) => {
   const dragRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -13,7 +17,7 @@ const DragContainer = () => {
 
   return (
     <div id="dragme" ref={dragRef}>
-      Drag me around!
+      {children}
     </div>
   );
 };

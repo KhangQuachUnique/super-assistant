@@ -15,8 +15,8 @@ function initWindowDrag(win2, width = 300, height = 300) {
     }
   );
 }
-const WIDTH = 300;
-const HEIGHT = 300;
+const WIDTH = 500;
+const HEIGHT = 500;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 process.env.APP_ROOT = path.join(__dirname, "..");
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
@@ -29,6 +29,10 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     width: WIDTH,
     height: HEIGHT,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    hasShadow: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs")
     }
@@ -61,8 +65,8 @@ ipcMain.on(
     win.setBounds({
       x: screenX - mouseOffsetX,
       y: screenY - mouseOffsetY,
-      width: 300,
-      height: 300
+      width: WIDTH,
+      height: HEIGHT
     });
   }
 );
