@@ -41,6 +41,8 @@ function createWindow() {
     hasShadow: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -79,7 +81,7 @@ app.on("activate", () => {
 
 ipcMain.on(
   "move-window",
-  (event, { screenX, screenY, mouseOffsetX, mouseOffsetY }) => {
+  (_event, { screenX, screenY, mouseOffsetX, mouseOffsetY }) => {
     if (!win) return;
 
     // Tính tọa độ tuyệt đối để tránh mở rộng window

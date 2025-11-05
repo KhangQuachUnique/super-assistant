@@ -26,16 +26,25 @@ const ModelRender = () => {
       1000
     );
     // Camera ở dưới đáy (y âm), nhìn lên model
-    camera.position.set(0, -1.5, 2);
+    camera.position.set(0, 0, 3);
     camera.lookAt(0, 0, 0);
 
-    //Render
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    //Render - Tối ưu hóa
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      powerPreference: "high-performance", // Dùng GPU mạnh hơn
+    });
     renderer.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Giới hạn pixel ratio
     currentMount.appendChild(renderer.domElement);
 
     //Controls
     const controls = new OrbitControls(camera, renderer.domElement);
+    controls.mouseButtons = {
+      RIGHT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+    };
     controls.enableZoom = false;
     controls.enablePan = false;
     controls.maxPolarAngle = Math.PI / 2;
@@ -51,7 +60,7 @@ const ModelRender = () => {
     // GLTF loader - Fix: Use absolute path from public folder
     const loader = new GLTFLoader();
     loader.load(
-      "/src/assets/model_2/scene.gltf",
+      "/src/assets/model_1/scene.gltf",
       (gltf) => {
         const model = gltf.scene;
 
@@ -80,11 +89,16 @@ const ModelRender = () => {
       }
     );
 
-    // Animation loop
+    // Animation loop - Chỉ render khi cần
+    let animationFrameId: number;
     const animate = () => {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
+      animationFrameId = requestAnimationFrame(animate);
+
+      // Chỉ render nếu controls có thay đổi
+      if (controls.enabled) {
+        controls.update();
+        renderer.render(scene, camera);
+      }
     };
     animate();
 
@@ -101,6 +115,9 @@ const ModelRender = () => {
     // Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
       if (currentMount) {
         currentMount.removeChild(renderer.domElement);
       }

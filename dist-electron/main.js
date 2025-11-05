@@ -2,10 +2,15 @@ import { ipcMain, app, BrowserWindow } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 function initWindowDrag(win2, width = 300, height = 300) {
+  let lastMoveTime = 0;
+  const MOVE_THROTTLE = 8;
   ipcMain.on(
     "move-window",
-    (event, { screenX, screenY, mouseOffsetX, mouseOffsetY }) => {
+    (_event, { screenX, screenY, mouseOffsetX, mouseOffsetY }) => {
       if (!win2) return;
+      const now = Date.now();
+      if (now - lastMoveTime < MOVE_THROTTLE) return;
+      lastMoveTime = now;
       win2.setBounds({
         x: screenX - mouseOffsetX,
         y: screenY - mouseOffsetY,
@@ -34,7 +39,9 @@ function createWindow() {
     alwaysOnTop: true,
     hasShadow: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.mjs")
+      preload: path.join(__dirname, "preload.mjs"),
+      nodeIntegration: false,
+      contextIsolation: true
     }
   });
   initWindowDrag(win, WIDTH, HEIGHT);
@@ -60,7 +67,7 @@ app.on("activate", () => {
 });
 ipcMain.on(
   "move-window",
-  (event, { screenX, screenY, mouseOffsetX, mouseOffsetY }) => {
+  (_event, { screenX, screenY, mouseOffsetX, mouseOffsetY }) => {
     if (!win) return;
     win.setBounds({
       x: screenX - mouseOffsetX,
