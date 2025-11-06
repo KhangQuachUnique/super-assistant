@@ -20,8 +20,9 @@ export function initDrag(
     if (e.button !== 0) return;
 
     isDragging = true;
-    mouseOffsetX = e.screenX - window.screenX;
-    mouseOffsetY = e.screenY - window.screenY;
+    // Tính offset từ góc trên-trái của window
+    mouseOffsetX = e.clientX;
+    mouseOffsetY = e.clientY;
     element.style.cursor = "grabbing";
   });
 

@@ -1,37 +1,12 @@
-import { ipcMain, app, BrowserWindow } from "electron";
-import { fileURLToPath } from "node:url";
+import { BrowserWindow, ipcMain, app } from "electron";
 import path from "node:path";
-function initWindowDrag(win2, width = 300, height = 300) {
-  let lastMoveTime = 0;
-  const MOVE_THROTTLE = 8;
-  ipcMain.on(
-    "move-window",
-    (_event, { screenX, screenY, mouseOffsetX, mouseOffsetY }) => {
-      if (!win2) return;
-      const now = Date.now();
-      if (now - lastMoveTime < MOVE_THROTTLE) return;
-      lastMoveTime = now;
-      win2.setBounds({
-        x: screenX - mouseOffsetX,
-        y: screenY - mouseOffsetY,
-        width,
-        height
-      });
-    }
-  );
-}
+import { fileURLToPath } from "node:url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WIDTH = 500;
 const HEIGHT = 500;
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-process.env.APP_ROOT = path.join(__dirname, "..");
-const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
-const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
-const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
-let win;
-function createWindow() {
-  win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
+let mainWindow = null;
+const createMainWindow = () => {
+  mainWindow = new BrowserWindow({
     width: WIDTH,
     height: HEIGHT,
     frame: false,
@@ -39,47 +14,46 @@ function createWindow() {
     alwaysOnTop: true,
     hasShadow: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.mjs"),
+      preload: path.join(__dirname, "/preload.mjs"),
       nodeIntegration: false,
       contextIsolation: true
     }
   });
-  initWindowDrag(win, WIDTH, HEIGHT);
-  win.webContents.on("did-finish-load", () => {
-    win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
-  });
+  const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
+  const APP_ROOT = path.join(__dirname, "..", "..");
+  const RENDERER_DIST = path.join(APP_ROOT, "dist");
   if (VITE_DEV_SERVER_URL) {
-    win.loadURL(VITE_DEV_SERVER_URL);
+    mainWindow.loadURL(VITE_DEV_SERVER_URL);
   } else {
-    win.loadFile(path.join(RENDERER_DIST, "index.html"));
+    mainWindow.loadFile(path.join(RENDERER_DIST, "index.html"));
   }
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+  return mainWindow;
+};
+let lastMoveTime = 0;
+const MOVE_THROTTLE = 4;
+function registerWindowHandlers() {
+  ipcMain.on(
+    "move-window",
+    (event, { screenX, screenY, mouseOffsetX, mouseOffsetY }) => {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (!win || win.isDestroyed()) return;
+      const now = Date.now();
+      if (now - lastMoveTime < MOVE_THROTTLE) return;
+      lastMoveTime = now;
+      const x = Math.round(screenX - mouseOffsetX);
+      const y = Math.round(screenY - mouseOffsetY);
+      win.setBounds({ x, y, width: 500, height: 500 });
+    }
+  );
 }
+registerWindowHandlers();
+app.whenReady().then(createMainWindow);
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-    win = null;
-  }
+  if (process.platform !== "darwin") app.quit();
 });
 app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+  if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
 });
-ipcMain.on(
-  "move-window",
-  (_event, { screenX, screenY, mouseOffsetX, mouseOffsetY }) => {
-    if (!win) return;
-    win.setBounds({
-      x: screenX - mouseOffsetX,
-      y: screenY - mouseOffsetY,
-      width: WIDTH,
-      height: HEIGHT
-    });
-  }
-);
-app.whenReady().then(createWindow);
-export {
-  MAIN_DIST,
-  RENDERER_DIST,
-  VITE_DEV_SERVER_URL
-};
